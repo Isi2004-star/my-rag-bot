@@ -7,7 +7,10 @@ import chromadb
 import edge_tts
 import pandas as pd
 import streamlit as st
+from bs4 import BeautifulSoup
+from docx import Document
 from groq import Groq
+from pptx import Presentation
 from pypdf import PdfReader
 from sentence_transformers import CrossEncoder, SentenceTransformer
 
@@ -46,7 +49,59 @@ def save_memories(memories: list[str]):
         json.dump(memories, f, indent=2)
 
 
-# --- Helper B: Structured CSV -> SQLite Schema, Charts & Text-to-SQL ---
+# --- Helper B: Multi-Format Document Text Extraction ---
+def extract_document_sections(uploaded_file) -> list[tuple[str, str]]:
+    """Extracts (location_label, text) pairs from PDF, DOCX, PPTX, HTML, or TXT/MD files."""
+    filename = uploaded_file.name.lower()
+    sections = []
+
+    if filename.endswith(".pdf"):
+        reader = PdfReader(uploaded_file)
+        for page_num, page in enumerate(reader.pages, start=1):
+            sections.append((f"Page {page_num}", page.extract_text() or ""))
+
+    elif filename.endswith(".docx"):
+        doc = Document(uploaded_file)
+        paragraphs = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
+        table_rows = []
+        for table in doc.tables:
+            for row in table.rows:
+                row_text = " | ".join(cell.text.strip() for cell in row.cells if cell.text.strip())
+                if row_text:
+                    table_rows.append(row_text)
+        combined = "\n".join(paragraphs + table_rows)
+        if combined:
+            sections.append(("Section 1", combined))
+
+    elif filename.endswith(".pptx"):
+        prs = Presentation(uploaded_file)
+        for slide_num, slide in enumerate(prs.slides, start=1):
+            slide_texts = []
+            for shape in slide.shapes:
+                if shape.has_text_frame:
+                    slide_texts.append(shape.text_frame.text)
+                if shape.has_table:
+                    for row in shape.table.rows:
+                        row_text = " | ".join(cell.text.strip() for cell in row.cells if cell.text.strip())
+                        if row_text:
+                            slide_texts.append(row_text)
+            sections.append((f"Slide {slide_num}", "\n".join(slide_texts)))
+
+    elif filename.endswith((".html", ".htm")):
+        raw_html = uploaded_file.read().decode("utf-8", errors="ignore")
+        soup = BeautifulSoup(raw_html, "html.parser")
+        for tag in soup(["script", "style", "nav", "footer"]):
+            tag.decompose()
+        sections.append(("Web Page", soup.get_text(separator="\n")))
+
+    elif filename.endswith((".txt", ".md")):
+        raw_text = uploaded_file.read().decode("utf-8", errors="ignore")
+        sections.append(("Text", raw_text))
+
+    return sections
+
+
+# --- Helper C: Structured CSV -> SQLite Schema, Charts & Text-to-SQL ---
 def get_active_csv_schema() -> tuple[str | None, str | None]:
     if not os.path.exists(SQLITE_DB):
         return None, None
@@ -83,16 +138,16 @@ def render_bar_chart(df: pd.DataFrame | None):
 
 def route_query(llm: Groq, question: str, schema_desc: str | None) -> str:
     if not schema_desc:
-        return "PDF"
+        return "DOC"
     router_prompt = (
         "You are a query router. Decide whether the user's question is best answered by querying "
-        "the active SQL/CSV table below OR by searching the uploaded PDF lecture slides.\n\n"
+        "the active SQL/CSV table below OR by searching the uploaded documents (PDF/DOCX/PPTX/HTML/TXT).\n\n"
         f"Active SQL Table Schema:\n{schema_desc}\n\n"
         "Rules:\n"
         "- Choose CSV if the question asks for rows, rankings ('top 5'), averages, counts, filtering, "
-        "or specific mineral values covered by the table columns above.\n"
-        "- Choose PDF if the question asks for conceptual definitions, microscope parts, or theory from slides.\n"
-        "Reply with ONLY one word: CSV or PDF."
+        "or specific values covered by the table columns above.\n"
+        "- Choose DOC if the question asks for conceptual definitions, theory, or unstructured document content.\n"
+        "Reply with ONLY one word: CSV or DOC."
     )
     res = llm.chat.completions.create(
         model="openai/gpt-oss-20b",
@@ -103,7 +158,7 @@ def route_query(llm: Groq, question: str, schema_desc: str | None) -> str:
         temperature=0.0,
     )
     content = (res.choices[0].message.content or "").strip().upper()
-    return "CSV" if "CSV" in content else "PDF"
+    return "CSV" if "CSV" in content else "DOC"
 
 
 def query_csv_with_sql(llm: Groq, question: str, table_name: str, schema_desc: str, memory_block: str):
@@ -151,9 +206,9 @@ def query_csv_with_sql(llm: Groq, question: str, table_name: str, schema_desc: s
     return ans_res.choices[0].message.content, sql_query, result_df
 
 
-# --- Helper C: Text-to-Speech (TTS) ---
+# --- Helper D: Text-to-Speech (TTS) ---
 def clean_text_for_speech(text: str) -> str:
-    text = re.sub(r"\[[^\]]*Page\s*\d+[^\]]*\]", "", text)
+    text = re.sub(r"\[[^\]]*(?:Page|Slide|Section|Web Page|Text)[^\]]*\]", "", text)
     text = re.sub(r"[*#`>_~]", "", text)
     return re.sub(r"\s+", " ", text).strip()
 
@@ -174,7 +229,7 @@ def text_to_speech_bytes(text: str, voice: str) -> bytes:
     return asyncio.run(_synthesize_edge_tts(spoken_text, voice))
 
 
-# --- Helper D: Multi-Turn Query Rewriting ---
+# --- Helper E: Multi-Turn Query Rewriting ---
 def rewrite_query(llm: Groq, chat_history: list, latest_question: str) -> str:
     if not chat_history:
         return latest_question
@@ -233,34 +288,39 @@ with st.sidebar:
         disabled=not enable_tts,
     )
 
-    # --- Multi-Modal Knowledge Base Upload (PDF + CSV) ---
-    st.subheader("📂 Knowledge Base (PDF & CSV)")
-    uploaded_pdf = st.file_uploader("Upload PDF Document", type=["pdf"])
-    if uploaded_pdf and st.button("Index PDF"):
-        with st.spinner("Indexing PDF..."):
-            reader = PdfReader(uploaded_pdf)
+    # --- Multi-Modal Knowledge Base Upload (Documents + CSV) ---
+    st.subheader("📂 Knowledge Base (Docs & CSV)")
+    uploaded_doc = st.file_uploader(
+        "Upload Document (PDF, DOCX, PPTX, HTML, TXT)",
+        type=["pdf", "docx", "pptx", "html", "htm", "txt", "md"],
+    )
+    if uploaded_doc and st.button("Index Document"):
+        with st.spinner(f"Indexing {uploaded_doc.name}..."):
+            sections = extract_document_sections(uploaded_doc)
             chunks, metadata = [], []
-            for page_num, page in enumerate(reader.pages, start=1):
-                text = page.extract_text() or ""
+            for loc_label, text in sections:
                 for i in range(0, len(text), 450):
                     piece = text[i : i + 500].strip()
                     if len(piece) > 50:
                         chunks.append(piece)
-                        metadata.append({"source": uploaded_pdf.name, "page": page_num})
+                        metadata.append({"source": uploaded_doc.name, "page": loc_label})
 
-            try:
-                client.delete_collection("my_notes")
-            except Exception:
-                pass
-            collection = client.create_collection("my_notes")
-            vectors = embedder.encode(chunks).tolist()
-            collection.add(
-                ids=[f"card_{i}" for i in range(len(chunks))],
-                documents=chunks,
-                embeddings=vectors,
-                metadatas=metadata,
-            )
-            st.success(f"Indexed {len(chunks)} chunks from {uploaded_pdf.name}!")
+            if not chunks:
+                st.warning("No readable text found in the uploaded document.")
+            else:
+                try:
+                    client.delete_collection("my_notes")
+                except Exception:
+                    pass
+                collection = client.create_collection("my_notes")
+                vectors = embedder.encode(chunks).tolist()
+                collection.add(
+                    ids=[f"card_{i}" for i in range(len(chunks))],
+                    documents=chunks,
+                    embeddings=vectors,
+                    metadatas=metadata,
+                )
+                st.success(f"Indexed {len(chunks)} chunks from {uploaded_doc.name}!")
 
     uploaded_csv = st.file_uploader("Upload CSV Table", type=["csv"])
     if uploaded_csv and st.button("Load CSV into SQLite"):
@@ -302,12 +362,12 @@ for msg in st.session_state.messages:
         if "rewritten_query" in msg:
             st.caption(f"🔍 *Searched for: {msg['rewritten_query']}*")
         if "sources" in msg:
-            with st.expander("View Retrieved PDF Sources"):
+            with st.expander("View Retrieved Document Sources"):
                 for src in msg["sources"]:
                     st.caption(src)
 
 # --- 4. Chat Input (Text + Optional Microphone) ---
-user_submission = st.chat_input("Ask about your PDF or CSV data...", accept_audio=True)
+user_submission = st.chat_input("Ask about your documents or CSV data...", accept_audio=True)
 
 if user_submission:
     if not api_key:
@@ -373,74 +433,82 @@ if user_submission:
                         st.error(answer)
                         msg_record["content"] = answer
 
-            # --- ROUTE 2: Unstructured PDF Vector + Reranker Pipeline (with Silent SQL Fallback) ---
+            # --- ROUTE 2: Unstructured Document Vector + Reranker Pipeline (with Silent SQL Fallback) ---
             else:
                 collection = client.get_or_create_collection("my_notes")
-                q_vector = embedder.encode([standalone_query]).tolist()
-                raw_results = collection.query(query_embeddings=q_vector, n_results=8)
-
-                docs = raw_results["documents"][0]
-                metas = raw_results["metadatas"][0]
-
-                pairs = [[standalone_query, d] for d in docs]
-                scores = reranker.predict(pairs)
-                ranked = sorted(zip(scores, docs, metas), key=lambda x: x[0], reverse=True)[:3]
-
-                context_blocks, source_previews = [], []
-                for score, doc, meta in ranked:
-                    tag = f"[{meta['source']}, Page {meta['page']}]"
-                    context_blocks.append(f"{tag}\n{doc}")
-                    source_previews.append(f"**{tag}** (Relevance: {score:.2f}): {doc[:220]}...")
-
-                context = "\n\n---\n\n".join(context_blocks)
-
-                system_prompt = (
-                    "You are a precise study and data assistant. Answer using ONLY the provided context. "
-                    "Cite the exact source and page number (e.g., [filename.pdf, Page 4]) for every claim. "
-                    "If the context does not contain the answer, say: 'I do not have enough information in the document to answer that.'"
-                    f"{memory_block}"
-                )
-
-                with st.spinner("Searching documents & generating answer..."):
-                    response = llm.chat.completions.create(
-                        model="openai/gpt-oss-120b",
-                        messages=[
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {standalone_query}"},
-                        ],
-                        temperature=0.1,
+                if collection.count() == 0:
+                    answer = "Please upload and index a document (or load a CSV table) in the left sidebar first."
+                    st.info(answer)
+                    msg_record["content"] = answer
+                else:
+                    q_vector = embedder.encode([standalone_query]).tolist()
+                    raw_results = collection.query(
+                        query_embeddings=q_vector,
+                        n_results=min(8, collection.count()),
                     )
-                    answer = response.choices[0].message.content
 
-                # If PDF lacks the answer, silently fall back to the active SQL table
-                answered_via_sql = False
-                if "do not have enough information" in answer.lower() and table_name and schema_desc:
-                    try:
-                        sql_answer, sql_query, result_df = query_csv_with_sql(
-                            llm, standalone_query, table_name, schema_desc, memory_block
+                    docs = raw_results["documents"][0]
+                    metas = raw_results["metadatas"][0]
+
+                    pairs = [[standalone_query, d] for d in docs]
+                    scores = reranker.predict(pairs)
+                    ranked = sorted(zip(scores, docs, metas), key=lambda x: x[0], reverse=True)[:3]
+
+                    context_blocks, source_previews = [], []
+                    for score, doc, meta in ranked:
+                        tag = f"[{meta['source']}, {meta['page']}]"
+                        context_blocks.append(f"{tag}\n{doc}")
+                        source_previews.append(f"**{tag}** (Relevance: {score:.2f}): {doc[:220]}...")
+
+                    context = "\n\n---\n\n".join(context_blocks)
+
+                    system_prompt = (
+                        "You are a precise study and data assistant. Answer using ONLY the provided context. "
+                        "Cite the exact source and section/page/slide tag (e.g., [filename.pdf, Page 4] or [slides.pptx, Slide 2]) for every claim. "
+                        "If the context does not contain the answer, say: 'I do not have enough information in the document to answer that.'"
+                        f"{memory_block}"
+                    )
+
+                    with st.spinner("Searching documents & generating answer..."):
+                        response = llm.chat.completions.create(
+                            model="openai/gpt-oss-120b",
+                            messages=[
+                                {"role": "system", "content": system_prompt},
+                                {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {standalone_query}"},
+                            ],
+                            temperature=0.1,
                         )
-                        if not result_df.empty:
-                            st.markdown(sql_answer)
-                            render_bar_chart(result_df)
-                            with st.expander("View Generated SQL & Raw Data"):
-                                st.code(sql_query, language="sql")
-                                st.dataframe(result_df, use_container_width=True)
-                            msg_record.update(
-                                {"content": sql_answer, "sql_query": sql_query, "dataframe": result_df}
+                        answer = response.choices[0].message.content
+
+                    # If document lacks the answer, silently fall back to the active SQL table
+                    answered_via_sql = False
+                    if "do not have enough information" in answer.lower() and table_name and schema_desc:
+                        try:
+                            sql_answer, sql_query, result_df = query_csv_with_sql(
+                                llm, standalone_query, table_name, schema_desc, memory_block
                             )
-                            answered_via_sql = True
-                    except Exception:
-                        pass
+                            if not result_df.empty:
+                                st.markdown(sql_answer)
+                                render_bar_chart(result_df)
+                                with st.expander("View Generated SQL & Raw Data"):
+                                    st.code(sql_query, language="sql")
+                                    st.dataframe(result_df, use_container_width=True)
+                                msg_record.update(
+                                    {"content": sql_answer, "sql_query": sql_query, "dataframe": result_df}
+                                )
+                                answered_via_sql = True
+                        except Exception:
+                            pass
 
-                # Only show the PDF answer/refusal if SQL fallback did NOT answer it
-                if not answered_via_sql:
-                    st.markdown(answer)
-                    with st.expander("View Retrieved PDF Sources"):
-                        for src in source_previews:
-                            st.caption(src)
-                    msg_record.update({"content": answer, "sources": source_previews})
+                    # Only show the document answer/refusal if SQL fallback did NOT answer it
+                    if not answered_via_sql:
+                        st.markdown(answer)
+                        with st.expander("View Retrieved Document Sources"):
+                            for src in source_previews:
+                                st.caption(src)
+                        msg_record.update({"content": answer, "sources": source_previews})
 
-            # Optional TTS synthesis (off by default while you're in a noisy place)
+            # Optional TTS synthesis
             if enable_tts:
                 with st.spinner("Synthesizing voice response..."):
                     audio_data = text_to_speech_bytes(msg_record["content"], selected_voice)
