@@ -18,16 +18,19 @@ MEMORY_FILE = "user_memory.json"
 SQLITE_DB = "tabular_data.db"
 
 
-# --- 1. Load Models Once (Cached for Speed) ---
+# --- 1. Load Models & Chroma Client Once (Cached for Speed & Cloud Stability) ---
 @st.cache_resource
-def load_models():
+def load_resources():
     embedder = SentenceTransformer("all-MiniLM-L6-v2")
     reranker = CrossEncoder("BAAI/bge-reranker-base")
-    return embedder, reranker
+    try:
+        db_client = chromadb.PersistentClient(path="./chroma_db")
+    except Exception:
+        db_client = chromadb.EphemeralClient()
+    return embedder, reranker, db_client
 
 
-embedder, reranker = load_models()
-client = chromadb.PersistentClient(path="./chroma_db")
+embedder, reranker, client = load_resources()
 
 
 # --- Helper A: Long-Term Persistent Memory (JSON) ---
