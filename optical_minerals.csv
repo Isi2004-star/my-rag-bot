@@ -1,0 +1,16 @@
+mineral_name,crystal_system,optical_class,optic_sign,min_refractive_index,max_refractive_index,max_birefringence,mohs_hardness,pleochroism
+Quartz,Trigonal,Uniaxial,Positive,1.544,1.553,0.009,7.0,None
+Calcite,Trigonal,Uniaxial,Negative,1.486,1.658,0.172,3.0,None
+Muscovite,Monoclinic,Biaxial,Negative,1.552,1.615,0.042,2.5,Weak
+Biotite,Monoclinic,Biaxial,Negative,1.565,1.696,0.060,2.8,Strong
+Plagioclase (Albite),Triclinic,Biaxial,Positive,1.527,1.538,0.011,6.2,None
+Microcline,Triclinic,Biaxial,Negative,1.518,1.525,0.007,6.0,None
+Orthopyroxene (Enstatite),Orthorhombic,Biaxial,Positive,1.650,1.680,0.015,5.5,Weak
+Clinopyroxene (Augite),Monoclinic,Biaxial,Positive,1.671,1.735,0.028,6.0,Weak
+Hornblende,Monoclinic,Biaxial,Negative,1.615,1.705,0.025,5.5,Strong
+Olivine (Forsterite),Orthorhombic,Biaxial,Positive,1.635,1.670,0.035,6.8,None
+Garnet (Almandine),Isometric,Isotropic,None,1.770,1.830,0.000,7.2,None
+Zircon,Tetragonal,Uniaxial,Positive,1.920,1.968,0.048,7.5,Weak
+Tourmaline (Schorl),Trigonal,Uniaxial,Negative,1.635,1.675,0.040,7.0,Strong
+Kyanite,Triclinic,Biaxial,Negative,1.712,1.734,0.016,5.5,Weak
+Andalusite,Orthorhombic,Biaxial,Negative,1.629,1.647,0.010,7.5,Strong

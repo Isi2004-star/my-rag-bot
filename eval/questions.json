@@ -1,0 +1,323 @@
+{
+  "source_pdf": "Optical_Mineralogy_-_Part_I.pdf",
+  "description": "23-question benchmark: 20 in-domain questions plus 3 out-of-scope traps (is_unanswerable=true) to test the hallucination guardrail. expected_pages = 1-indexed PDF pages (same as slide numbers). For answerable questions, keywords = terms a correct answer should contain. For traps, a correct response is a refusal / 'not in the document'.",
+  "questions": [
+    {
+      "id": 1,
+      "question": "What is the wavelength range of visible light?",
+      "expected_answer": "About 390 nm to 770 nm.",
+      "expected_pages": [
+        7
+      ],
+      "keywords": [
+        "390",
+        "770",
+        "nm"
+      ],
+      "is_unanswerable": false
+    },
+    {
+      "id": 2,
+      "question": "How thick is a standard thin section?",
+      "expected_answer": "Usually 30 micrometres (0.03 mm).",
+      "expected_pages": [
+        10
+      ],
+      "keywords": [
+        "30",
+        "0.03"
+      ],
+      "is_unanswerable": false
+    },
+    {
+      "id": 3,
+      "question": "How is the refractive index of a mineral defined?",
+      "expected_answer": "n = velocity of light in vacuum divided by velocity of light in the crystal, so n is always greater than 1.",
+      "expected_pages": [
+        23
+      ],
+      "keywords": [
+        "vacuum",
+        "velocity",
+        "crystal"
+      ],
+      "is_unanswerable": false
+    },
+    {
+      "id": 4,
+      "question": "What range of refractive index values do most minerals have?",
+      "expected_answer": "Most minerals have n between 1.5 and 2.0.",
+      "expected_pages": [
+        23
+      ],
+      "keywords": [
+        "1.5",
+        "2.0"
+      ],
+      "is_unanswerable": false
+    },
+    {
+      "id": 5,
+      "question": "What is the difference between isotropic and anisotropic minerals?",
+      "expected_answer": "Isotropic minerals (mostly isometric) have the same light velocity and a single refractive index in all directions. Anisotropic minerals have different velocities and refractive indices in different directions.",
+      "expected_pages": [
+        25,
+        26
+      ],
+      "keywords": [
+        "isotropic",
+        "anisotropic",
+        "direction",
+        "refractive index"
+      ],
+      "is_unanswerable": false
+    },
+    {
+      "id": 6,
+      "question": "What happens to light when it enters an anisotropic crystal?",
+      "expected_answer": "It splits into two polarized rays, the ordinary (O) ray and the extraordinary (E) ray, vibrating at 90 degrees to each other with different velocities and refractive indices. This is double refraction.",
+      "expected_pages": [
+        28
+      ],
+      "keywords": [
+        "ordinary",
+        "extraordinary",
+        "90",
+        "double refraction"
+      ],
+      "is_unanswerable": false
+    },
+    {
+      "id": 7,
+      "question": "How do you tell a uniaxial positive mineral from a uniaxial negative one?",
+      "expected_answer": "Uniaxial positive has omega less than epsilon; uniaxial negative has omega greater than epsilon.",
+      "expected_pages": [
+        31
+      ],
+      "keywords": [
+        "omega",
+        "epsilon",
+        "positive",
+        "negative"
+      ],
+      "is_unanswerable": false
+    },
+    {
+      "id": 8,
+      "question": "What are the three refractive indices in biaxial minerals, and which one is the fastest?",
+      "expected_answer": "Alpha (X direction), beta (Y) and gamma (Z). Alpha is the fastest ray with the lowest RI; gamma is the slowest with the highest RI.",
+      "expected_pages": [
+        33
+      ],
+      "keywords": [
+        "alpha",
+        "beta",
+        "gamma",
+        "fastest",
+        "lowest"
+      ],
+      "is_unanswerable": false
+    },
+    {
+      "id": 9,
+      "question": "What is the 2V angle, and which axis bisects it in a biaxial positive mineral?",
+      "expected_answer": "2V is the acute angle between the two optic axes. In biaxial positive minerals Z bisects it (in biaxial negative, X does).",
+      "expected_pages": [
+        34,
+        35
+      ],
+      "keywords": [
+        "acute",
+        "optic axes",
+        "Z"
+      ],
+      "is_unanswerable": false
+    },
+    {
+      "id": 10,
+      "question": "What is the formula for retardation?",
+      "expected_answer": "Retardation = thickness times birefringence, i.e. t x (ns - nf).",
+      "expected_pages": [
+        32
+      ],
+      "keywords": [
+        "thickness",
+        "birefringence"
+      ],
+      "is_unanswerable": false
+    },
+    {
+      "id": 11,
+      "question": "What happens to an anisotropic mineral under crossed polars when you rotate the stage?",
+      "expected_answer": "Its interference colour changes, and every 90 degrees it goes completely dark (extinct).",
+      "expected_pages": [
+        36,
+        48
+      ],
+      "keywords": [
+        "90",
+        "extinct",
+        "dark"
+      ],
+      "is_unanswerable": false
+    },
+    {
+      "id": 12,
+      "question": "What is the Becke line, and which way does it move when you lower the stage?",
+      "expected_answer": "A bright line at the boundary between two materials. When the stage is lowered it moves toward the material with the higher refractive index.",
+      "expected_pages": [
+        39,
+        40
+      ],
+      "keywords": [
+        "bright line",
+        "higher",
+        "refractive index",
+        "lowered"
+      ],
+      "is_unanswerable": false
+    },
+    {
+      "id": 13,
+      "question": "What is pleochroism?",
+      "expected_answer": "Selective absorption of light in coloured anisotropic (doubly refracting) crystals, so the colour changes as the stage rotates. Uniaxial crystals show two colours (dichroic) and biaxial show three (trichroic).",
+      "expected_pages": [
+        42
+      ],
+      "keywords": [
+        "absorption",
+        "colour",
+        "anisotropic"
+      ],
+      "is_unanswerable": false
+    },
+    {
+      "id": 14,
+      "question": "What do euhedral, subhedral and anhedral mean?",
+      "expected_answer": "Euhedral: well-defined straight edges. Subhedral: partially developed straight edges. Anhedral: no recognizable straight edges.",
+      "expected_pages": [
+        44
+      ],
+      "keywords": [
+        "euhedral",
+        "subhedral",
+        "anhedral",
+        "straight edges"
+      ],
+      "is_unanswerable": false
+    },
+    {
+      "id": 15,
+      "question": "What is the difference between a phenocryst and a porphyroblast?",
+      "expected_answer": "Both are large crystals in a finer matrix; phenocrysts occur in igneous rocks while porphyroblasts occur in metamorphic rocks.",
+      "expected_pages": [
+        45
+      ],
+      "keywords": [
+        "igneous",
+        "metamorphic",
+        "large"
+      ],
+      "is_unanswerable": false
+    },
+    {
+      "id": 16,
+      "question": "What are the three types of extinction and which minerals show them?",
+      "expected_answer": "Parallel (e.g. orthopyroxene), inclined (triclinic and many monoclinic minerals, including most micas) and symmetrical (e.g. calcite).",
+      "expected_pages": [
+        48,
+        49
+      ],
+      "keywords": [
+        "parallel",
+        "inclined",
+        "symmetrical",
+        "orthopyroxene",
+        "calcite"
+      ],
+      "is_unanswerable": false
+    },
+    {
+      "id": 17,
+      "question": "What is undulatory extinction and what causes it?",
+      "expected_answer": "Different parts of a grain go extinct at different times, caused by strain or chemical heterogeneity giving different orientations within the grain.",
+      "expected_pages": [
+        50
+      ],
+      "keywords": [
+        "strain",
+        "different parts",
+        "extinction"
+      ],
+      "is_unanswerable": false
+    },
+    {
+      "id": 18,
+      "question": "Which twinning styles help identify plagioclase and microcline?",
+      "expected_answer": "Plagioclase shows polysynthetic twinning; microcline shows two sets of lamellar twinning (cross-hatched).",
+      "expected_pages": [
+        55
+      ],
+      "keywords": [
+        "polysynthetic",
+        "plagioclase",
+        "microcline",
+        "lamellar"
+      ],
+      "is_unanswerable": false
+    },
+    {
+      "id": 19,
+      "question": "How can you tell exsolution lamellae from twinning?",
+      "expected_answer": "Exsolution lamellae are irregular in shape, unlike twinning. They form when a mineral unmixes into two compositions with different orientations in the grain.",
+      "expected_pages": [
+        58
+      ],
+      "keywords": [
+        "irregular",
+        "unmix",
+        "lamellae"
+      ],
+      "is_unanswerable": false
+    },
+    {
+      "id": 20,
+      "question": "What does the analyzer do in a polarizing microscope?",
+      "expected_answer": "It is a second polarizer above the objective lenses, oriented at 90 degrees to the lower polarizer. It can be inserted into or removed from the light path to switch between PPL and XPL.",
+      "expected_pages": [
+        19,
+        12
+      ],
+      "keywords": [
+        "second polarizer",
+        "90",
+        "lower polarizer"
+      ],
+      "is_unanswerable": false
+    },
+    {
+      "id": 21,
+      "question": "What is the Mohs hardness of quartz?",
+      "expected_answer": "Not covered in the document. The bot should say it doesn't know or can't find this in the provided material, rather than answering from general knowledge.",
+      "expected_pages": [],
+      "keywords": [],
+      "is_unanswerable": true
+    },
+    {
+      "id": 22,
+      "question": "Who won the 2022 FIFA World Cup?",
+      "expected_answer": "Completely off-domain. The bot should decline or say the document doesn't contain this.",
+      "expected_pages": [],
+      "keywords": [],
+      "is_unanswerable": true
+    },
+    {
+      "id": 23,
+      "question": "What is the exact numerical aperture of the Leica DMRX objective lenses?",
+      "expected_answer": "Near-domain trap. The slides mention numerical aperture only in general terms and show a Leica DMRX photo with no specifications. The bot should say the specific value isn't in the document.",
+      "expected_pages": [],
+      "keywords": [],
+      "is_unanswerable": true
+    }
+  ]
+}
